@@ -80,6 +80,7 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
 
     // 当前还有多少新元素要被patch(新增、更新)
     const toBePatched = e2 - s2 + 1;
+    let patched = 0;
 
     const newIndexToOldIndexMap = new Array(toBePatched);
     // 下标是新元素的相对下标，值是老元素的下标+1
@@ -93,13 +94,18 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
     for (i = s1; i <= e1; i++) {
       const prevChild = c1[i];
 
+      if (patched >= toBePatched) {
+        unmount(prevChild.key);
+        continue;
+      }
+
       const newIndex = keyToNewIndexMap.get(prevChild.key);
 
       if (newIndex === undefined) {
         // 节点没法复用
         unmount(prevChild.key);
       } else {
-        //
+        //移动发生在这里，这里的节点可能要被移动（ecd）
         if (newIndex >= maxNewIndexSoFar) {
           maxNewIndexSoFar = newIndex;
         } else {
@@ -108,6 +114,7 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
         }
         newIndexToOldIndexMap[newIndex - s2] = i + 1;
         patch(prevChild.key);
+        patched++;
       }
     }
 
@@ -138,7 +145,60 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
   }
 
   // 返回不需要移动的节点
+  // 得到最长递增子序列lis（算法+实际应用，跳过0），返回路径
   function getSequence(arr) {
-    return [1, 2];
+    // return [1, 2];
+    const n = arr.length;
+    // 最长递增子序列路径, 有序递增
+    const result = [0];
+
+    const recordIndexOfI = arr.slice(i);
+
+    for (let i = 0; i < n; i++) {
+      const arrI = arr[i];
+      // 如果元素值为0，证明节点是新增的，老dom上没有，肯定不需要移动，所以跳过0，不在lis里
+      if (arrI !== 0) {
+        // 判断arrI插入到lis哪里
+        const last = result[result.length - 1];
+        if (arr[last] < arrI) {
+          // arrI比lis最后一个元素还大，又构成最长递增
+          recordIndexOfI[i] = last;
+          result.push(i);
+          continue;
+        }
+        // 二分查找插入元素
+        let left = 0,
+          right = result.length - 1;
+        while (left < right) {
+          const mid = (left + right) >> 1;
+          //  0 1 2 3 4 (1.5)
+          if (arr[result[mid]] < arrI) {
+            // mid< 目标元素 ， 在右边
+            left = mid + 1;
+          } else {
+            right = mid;
+          }
+        }
+
+        if (arrI < arr[result[left]]) {
+          if (left > 0) {
+            recordIndexOfI[i] = result[left - 1];
+          }
+          result[left] = i;
+        }
+      }
+    }
+
+    // 遍历result，纠正位置
+    let lastIndex = result.length - 1;
+    let last = result[lastIndex];
+
+    while (lastIndex >= 0) {
+      result[lastIndex] = last;
+      last = recordIndexOfI[last];
+      lastIndex--;
+    }
+
+    return result;
   }
 };
