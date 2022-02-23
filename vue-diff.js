@@ -44,7 +44,7 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
     e2--;
   }
 
-  // *3. 老节点没了，新节点还有
+  // *3.1 老节点没了，新节点还有
   if (i > e1) {
     if (i <= e2) {
       while (i <= e2) {
@@ -55,7 +55,7 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
     }
   }
 
-  // *4. 老节点还有，新节点没了
+  // *3.2 老节点还有，新节点没了
   else if (i > e2) {
     while (i <= e1) {
       const n1 = c1[i];
@@ -63,11 +63,11 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
       i++;
     }
   } else {
-    // *5 新老节点都有，但是顺序不稳定
+    // *4 新老节点都有，但是顺序不稳定
     // 遍历新老节点
     // i是新老元素的起始位置
 
-    // *5.1 把新元素做成Map图，key: value(index)
+    // *4.1 把新元素做成Map图，key: value(index)
     const s1 = i;
     const s2 = i;
 
@@ -78,7 +78,7 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
       keyToNewIndexMap.set(nextChild.key, i);
     }
 
-    // 当前还有多少新元素要被patch(新增、更新)
+    // *4.2 当前还有多少新元素要被patch(新增、更新)
     const toBePatched = e2 - s2 + 1;
     let patched = 0;
 
@@ -88,7 +88,7 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
       newIndexToOldIndexMap[i] = 0;
     }
 
-    // *5.2 先遍历老元素 检查老元素是否要被复用，如果复用就patch，如果不能复用就删除
+    // *4.3 先遍历老元素 检查老元素是否要被复用，如果复用就patch，如果不能复用就删除
     let moved = false;
     let maxNewIndexSoFar = 0;
     for (i = s1; i <= e1; i++) {
@@ -118,7 +118,7 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
       }
     }
 
-    // *5.3 遍历新元素 mount move
+    // *4.4 遍历新元素 mount move
     // 返回不需要移动的节点
     const increasingNewIndexSequece = moved
       ? getSequence(newIndexToOldIndexMap)
