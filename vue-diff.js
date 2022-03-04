@@ -100,7 +100,6 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
       }
 
       const newIndex = keyToNewIndexMap.get(prevChild.key);
-
       if (newIndex === undefined) {
         // 节点没法复用
         unmount(prevChild.key);
@@ -148,31 +147,34 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
   // 得到最长递增子序列lis（算法+实际应用，跳过0），返回路径
   function getSequence(arr) {
     // return [1, 2];
-    const n = arr.length;
+
     // 最长递增子序列路径, 有序递增
-    const result = [0];
+    const lis = [0];
 
-    const recordIndexOfI = arr.slice(i);
+    // 相当于复制一份arr数组，此数组用于稍后纠正lis用的
+    const recordIndexOfI = arr.slice();
 
-    for (let i = 0; i < n; i++) {
+    const len = arr.length;
+    for (let i = 0; i < len; i++) {
       const arrI = arr[i];
       // 如果元素值为0，证明节点是新增的，老dom上没有，肯定不需要移动，所以跳过0，不在lis里
       if (arrI !== 0) {
         // 判断arrI插入到lis哪里
-        const last = result[result.length - 1];
+        const last = lis[lis.length - 1];
+        // arrI比lis最后一个元素还大，又构成最长递增
         if (arr[last] < arrI) {
-          // arrI比lis最后一个元素还大，又构成最长递增
+          // 记录第i次的时候，本来的元素是什么，后面要做回溯的
           recordIndexOfI[i] = last;
-          result.push(i);
+          lis.push(i);
           continue;
         }
         // 二分查找插入元素
         let left = 0,
-          right = result.length - 1;
+          right = lis.length - 1;
         while (left < right) {
           const mid = (left + right) >> 1;
           //  0 1 2 3 4 (1.5)
-          if (arr[result[mid]] < arrI) {
+          if (arr[lis[mid]] < arrI) {
             // mid< 目标元素 ， 在右边
             left = mid + 1;
           } else {
@@ -180,25 +182,27 @@ exports.diffArray = (c1, c2, { mountElement, patch, unmount, move }) => {
           }
         }
 
-        if (arrI < arr[result[left]]) {
+        if (arrI < arr[lis[left]]) {
+          // 从lis中找到了比arrI大的元素里最小的那个，即arr[lis[left]]。
+          // 否则则没有找到比arrI大的元素，就不需要做什么了
           if (left > 0) {
-            recordIndexOfI[i] = result[left - 1];
+            // 记录第i次的时候，上次的元素的是什么，便于后面回溯
+            recordIndexOfI[i] = lis[left - 1];
           }
-          result[left] = i;
+          lis[left] = i;
         }
       }
     }
 
-    // 遍历result，纠正位置
-    let lastIndex = result.length - 1;
-    let last = result[lastIndex];
+    // 遍历lis，纠正位置
+    let i = lis.length;
+    let last = lis[i - 1];
 
-    while (lastIndex >= 0) {
-      result[lastIndex] = last;
+    while (i-- > 0) {
+      lis[i] = last;
       last = recordIndexOfI[last];
-      lastIndex--;
     }
 
-    return result;
+    return lis;
   }
 };
