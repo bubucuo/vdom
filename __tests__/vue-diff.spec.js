@@ -165,6 +165,7 @@ describe("数组Diff", () => {
         { key: "a" },
         { key: "b" },
 
+        { key: "d1" },
         { key: "e" },
         { key: "c" },
         { key: "d" },
@@ -196,11 +197,15 @@ describe("数组Diff", () => {
     //                 0 1  2 3 4  5 6
     // [i ... e1 + 1]: a b [c d e] f g
     // [i ... e2 + 1]: a b [e c d h] f g
+    // 真实下标         0 1  2 3 4 5  6 7
+    // 相对下标              0 1 2 3
     // 下标是新元素的相对下标，value是老元素的下标+1
     //                     [5,3,4,0]
     // todo
     // 1. mount
     expect(mountElement.mock.calls[0][0]).toBe("h");
+    expect(mountElement.mock.calls[1][0]).toBe("d1");
+
     // 2. move
     expect(move.mock.calls[0][0]).toBe("e");
   });
